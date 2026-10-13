@@ -1,0 +1,309 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Panduan Operasi Framework</title>
+<meta name="description" content="Panduan lengkap menjalankan framework AI bug hunting dari awal sampai akhir, untuk pemula.">
+<style>
+  /* Layout: satu kolom terbaca, bagian bernomor, blok perintah terminal vs prompt dibedakan warna */
+  :root {
+    --bg: #faf9f6;
+    --surface: #ffffff;
+    --surface-2: #f3f1ea;
+    --term-bg: #1d2b27;
+    --term-fg: #d6e4de;
+    --fg: #1c1a17;
+    --muted: #6b6558;
+    --line: #e4e0d4;
+    --accent: #0f5c4d;
+    --accent-soft: #e3efe9;
+    --warn: #8a4b12;
+    --warn-soft: #f7ebdc;
+    --stop: #93321f;
+    --stop-soft: #f6e3de;
+    --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --serif: "Spectral", Georgia, "Times New Roman", serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141310; --surface: #1d1b17; --surface-2: #26231d;
+      --term-bg: #10201c; --term-fg: #cfe0d9;
+      --fg: #ece8df; --muted: #9a9384; --line: #322e27;
+      --accent: #4bbfa3; --accent-soft: #15302a;
+      --warn: #d69552; --warn-soft: #2e2317;
+      --stop: #e08064; --stop-soft: #2f1c17;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141310; --surface: #1d1b17; --surface-2: #26231d;
+    --term-bg: #10201c; --term-fg: #cfe0d9;
+    --fg: #ece8df; --muted: #9a9384; --line: #322e27;
+    --accent: #4bbfa3; --accent-soft: #15302a;
+    --warn: #d69552; --warn-soft: #2e2317;
+    --stop: #e08064; --stop-soft: #2f1c17;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--fg); font-family: var(--sans); line-height: 1.6; margin: 0; }
+  .wrap { max-width: 760px; margin: 0 auto; padding-inline: 20px; padding-block: 52px 72px; }
+
+  header { margin-bottom: 40px; padding-bottom: 32px; border-bottom: 2px solid var(--line); }
+  .eyebrow { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); font-weight: 600; margin: 0 0 12px; }
+  h1 { font-family: var(--serif); font-weight: 600; font-size: clamp(30px, 6vw, 44px); line-height: 1.1; text-wrap: balance; margin: 0 0 14px; }
+  .lead { color: var(--muted); font-size: 17px; max-width: 60ch; margin: 0; }
+
+  section { margin-top: 44px; }
+  .sec-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 8px; }
+  .sec-num {
+    font-family: var(--serif); font-size: 15px; font-weight: 600; color: #fff;
+    background: var(--accent); min-width: 30px; height: 30px; border-radius: 8px;
+    display: grid; place-items: center; flex-shrink: 0; font-variant-numeric: tabular-nums;
+    align-self: flex-start; translate: 0 2px;
+  }
+  h2 { font-family: var(--serif); font-size: 24px; font-weight: 600; margin: 0; line-height: 1.2; text-wrap: balance; }
+  section > p, section > ul, section > ol { margin: 0 0 14px; }
+  .sec-body { padding-left: 44px; }
+  @media (max-width: 520px) { .sec-body { padding-left: 0; } }
+
+  h3 { font-size: 15px; font-weight: 650; margin: 22px 0 8px; }
+  ul, ol { padding-left: 22px; }
+  li { margin-bottom: 7px; }
+  a { color: var(--accent); }
+
+  /* blok perintah */
+  .block { border-radius: 10px; margin: 0 0 16px; overflow: hidden; border: 1px solid var(--line); }
+  .block-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+    padding: 7px 14px; display: flex; align-items: center; gap: 8px;
+  }
+  .term .block-label { background: var(--term-bg); color: #8fb3a8; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .prompt .block-label { background: var(--accent-soft); color: var(--accent); }
+  pre { margin: 0; padding: 13px 15px; overflow-x: auto; }
+  .term pre { background: var(--term-bg); color: var(--term-fg); }
+  .prompt pre { background: var(--surface-2); color: var(--fg); }
+  code { font-family: var(--mono); font-size: 13px; line-height: 1.5; }
+  p code, li code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; font-size: 12.5px; }
+  .term pre code { color: var(--term-fg); }
+  .cmt { color: #7f9a91; }
+
+  .callout { border-radius: 10px; padding: 14px 16px; margin: 0 0 16px; font-size: 14.5px; border: 1px solid; }
+  .callout p { margin: 0; }
+  .callout.tip { background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 28%, transparent); }
+  .callout.warn { background: var(--warn-soft); border-color: color-mix(in srgb, var(--warn) 30%, transparent); }
+  .callout.stop { background: var(--stop-soft); border-color: color-mix(in srgb, var(--stop) 32%, transparent); }
+  .callout b { font-weight: 700; }
+  .callout.tip b { color: var(--accent); }
+  .callout.warn b { color: var(--warn); }
+  .callout.stop b { color: var(--stop); }
+
+  .check { list-style: none; padding-left: 0; }
+  .check li { position: relative; padding-left: 28px; }
+  .check li::before {
+    content: "☐"; position: absolute; left: 0; top: -1px; color: var(--accent); font-size: 17px;
+  }
+
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; margin: 0 0 16px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  td code { font-size: 12px; }
+  .tbl-wrap { overflow-x: auto; }
+
+  footer { margin-top: 48px; padding: 20px 22px; background: var(--stop-soft); border: 1px solid color-mix(in srgb, var(--stop) 30%, transparent); border-radius: 12px; }
+  footer p { margin: 0; font-size: 14.5px; }
+  footer b { color: var(--stop); }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">AI-Powered Bug Hunting · Panduan Pemula</p>
+    <h1>Panduan Operasi Framework</h1>
+    <p class="lead">Dari nol sampai submit report. Ikuti bagian demi bagian secara urut. Yang perlu kamu ketik di Terminal ditandai gelap; yang perlu kamu kirim ke Claude ditandai hijau. Jangan lompati bagian mana pun pada run pertamamu.</p>
+  </header>
+
+  <section>
+    <div class="sec-head"><div class="sec-num">1</div><h2>Pahami dulu: ini sebenarnya apa</h2></div>
+    <div class="sec-body">
+      <p>"Framework" di sini bukan satu aplikasi. Ini tiga lapis yang bekerja sama di dalam <b>Claude Code</b> (asisten AI yang jalan di Terminal):</p>
+      <div class="tbl-wrap">
+      <table>
+        <tr><th>Lapis</th><th>Isinya apa</th><th>Tugasnya</th></tr>
+        <tr><td><b>Skill</b></td><td>folder <code>security-audit</code> berisi metodologi</td><td>memberi tahu AI <em>apa</em> yang dicek & caranya</td></tr>
+        <tr><td><b>Agent</b></td><td>sesi Claude Code yang kamu jalankan</td><td>yang <em>mengeksekusi</em> pengujian</td></tr>
+        <tr><td><b>Harness</b></td><td>skrip <code>validate-findings.cjs</code> + schema</td><td>mengecek temuan itu <em>benar</em>, bukan tebakan</td></tr>
+      </table>
+      </div>
+      <p>Kamu berperan sebagai <b>orkestrator</b>: kamu yang menyuruh tiap lapis bekerja pada waktunya, lewat perintah dan prompt di panduan ini.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><div class="sec-num">2</div><h2>Yang perlu disiapkan sekali saja</h2></div>
+    <div class="sec-body">
+      <p>Cek dulu semua ini ada di komputermu. Buka Terminal, ketik tiap perintah, pastikan keluar versinya (bukan error "command not found"):</p>
+      <div class="block term">
+        <div class="block-label">Ketik di Terminal</div>
+        <pre><code>node -v      <span class="cmt"># harus muncul versi, dibutuhkan validate-findings.cjs</span>
+claude       <span class="cmt"># memastikan Claude Code terpasang</span>
+ls ~/.claude/skills/security-audit/SKILL.md   <span class="cmt"># skill sudah terpasang?</span></code></pre>
+      </div>
+      <ul class="check">
+        <li>Node.js terpasang (<code>node -v</code> keluar versi)</li>
+        <li>Claude Code bisa dijalankan</li>
+        <li>Skill <code>security-audit</code> ada di <code>~/.claude/skills/</code></li>
+        <li>Kamu <b>terdaftar resmi</b> di sebuah program bug bounty</li>
+      </ul>
+      <div class="callout warn"><p><b>Kalau salah satu gagal:</b> balik ke langkah setup skill yang sudah kita kerjakan, atau pasang Node.js lebih dulu. Jangan lanjut sebelum empat kotak di atas tercentang.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><div class="sec-num">3</div><h2>Buat folder kerja untuk target</h2></div>
+    <div class="sec-body">
+      <p>Tiap target/engagement punya satu folder sendiri. Di dalamnya kita simpan aturan main dan hasilnya.</p>
+      <div class="block term">
+        <div class="block-label">Ketik di Terminal</div>
+        <pre><code>mkdir -p ~/hunting/target-pertama/recon
+cd ~/hunting/target-pertama
+touch engagement-rules.md</code></pre>
+      </div>
+      <p>Sekarang buka <code>engagement-rules.md</code> dengan editor apa pun dan isi. File inilah pagar pengaman yang dibaca AI sebelum menyentuh apa pun.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><div class="sec-num">4</div><h2>Isi aturan main — WAJIB sebelum apa pun</h2></div>
+    <div class="sec-body">
+      <p>Minimal isi hal-hal ini. Ganti semua tanda <code>&lt;...&gt;</code> dengan punyamu:</p>
+      <div class="block prompt">
+        <div class="block-label">Isi ke engagement-rules.md</div>
+        <pre><code>## Program
+Nama      : &lt;mis. Acme di HackerOne&gt;
+Link scope: &lt;link halaman scope resmi&gt;
+Tgl cek   : &lt;hari ini, scope sering berubah&gt;
+
+## In-scope (HANYA ini yang boleh disentuh)
+- api.target.example
+- *.target.example
+
+## Out-of-scope (jangan disentuh)
+- &lt;subdomain pihak ketiga, staging internal, dll&gt;
+
+## Akun uji (JANGAN kredensial asli)
+- Attacker: &lt;email+attacker&gt; / &lt;password&gt;
+- Victim  : &lt;email+victim&gt;   / &lt;password&gt;
+
+## Batas
+- Maks 2 request/detik
+- Stop: 3 temuan terkonfirmasi ATAU 60 menit
+- Dilarang: uji endpoint hapus/transfer di produksi</code></pre>
+      </div>
+      <div class="callout stop"><p><b>Pintu merah.</b> Kalau ragu sebuah aset in-scope atau tidak, anggap <b>OUT</b> dan jangan sentuh. Scope salah di sini berarti kamu menguji di luar izin, dan itu tanggung jawabmu penuh.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><div class="sec-num">5</div><h2>Jalankan Claude Code</h2></div>
+    <div class="sec-body">
+      <p>Dari dalam folder target tadi, nyalakan Claude Code:</p>
+      <div class="block term">
+        <div class="block-label">Ketik di Terminal</div>
+        <pre><code>cd ~/hunting/target-pertama
+claude</code></pre>
+      </div>
+      <p>Setelah masuk, pastikan skill-nya kebaca. Ketik:</p>
+      <div class="block prompt">
+        <div class="block-label">Kirim ke Claude</div>
+        <pre><code>/skills</code></pre>
+      </div>
+      <p>Pastikan <code>security-audit</code> muncul di daftar. Kalau tidak muncul, keluar (<code>Ctrl+C</code>), perbaiki posisi skill, lalu ulangi.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><div class="sec-num">6</div><h2>Fase Recon — memetakan, belum menguji</h2></div>
+    <div class="sec-body">
+      <p>Copy prompt ini ke Claude. AI akan membaca aturan main dan memetakan permukaan serang tanpa mengirim serangan apa pun.</p>
+      <div class="block prompt">
+        <div class="block-label">Kirim ke Claude</div>
+        <pre><code>Baca engagement-rules.md dulu. Pakai skill security-audit.
+Jalankan fase RECONNAISSANCE untuk satu target in-scope.
+Petakan endpoint dan klasifikasikan jadi sinyal. JANGAN kirim
+payload apa pun. Simpan hasil ke recon/surface.json.</code></pre>
+      </div>
+      <div class="callout tip"><p><b>Tanda benar:</b> AI membuka file <code>RECONNAISSANCE.md</code> milik skill, dan di akhir ada file <code>recon/surface.json</code>. Buka file itu, pastikan semua isinya in-scope.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><div class="sec-num">7</div><h2>Fase Hunting — satu kelas vuln dulu</h2></div>
+    <div class="sec-body">
+      <p>Jangan uji semua sekaligus. Untuk run pertama, pilih <b>IDOR</b> (paling mudah dibuktikan). Copy prompt ini:</p>
+      <div class="block prompt">
+        <div class="block-label">Kirim ke Claude</div>
+        <pre><code>Jalankan fase HUNTING dari recon/surface.json.
+Fokus HANYA ke IDOR/Broken Access Control.
+Pakai 2 akun uji di engagement-rules, maksimal 2 request/detik.
+Kumpulkan kandidat beserta bukti mentah (request + response).
+JANGAN simpulkan sebagai temuan dulu, itu tugas fase berikutnya.</code></pre>
+      </div>
+      <div class="callout warn"><p><b>Awasi di sini.</b> Kalau AI mulai menyebut aset yang tidak ada di <code>surface.json</code>, hentikan dan ingatkan soal scope. Itu feedback untuk memperketat aturan mainmu.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><div class="sec-num">8</div><h2>Fase Validasi — gerbang anti-slop</h2></div>
+    <div class="sec-body">
+      <p>Ini bagian terpenting, yang membedakan temuan asli dari sampah. Jalankan skrip pengecek bawaan skill:</p>
+      <div class="block prompt">
+        <div class="block-label">Kirim ke Claude</div>
+        <pre><code>Validasi semua kandidat pakai validate-findings.cjs terhadap
+report-schema.json. Buang yang tidak punya bukti (no_proof).
+Tunjukkan rekap: candidates N -> confirmed X, rejected Y,
+beserta alasan tiap penolakan.</code></pre>
+      </div>
+      <div class="callout tip"><p><b>Tanda benar:</b> skrip benar-benar dieksekusi, dan jumlah <code>confirmed</code> lebih kecil dari <code>candidates</code>. Kalau semua kandidat jadi "confirmed", gerbangnya tidak bekerja, periksa ulang.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><div class="sec-num">9</div><h2>Fase Report — tolak dirimu dulu, baru tulis</h2></div>
+    <div class="sec-body">
+      <p>Sebelum menulis laporan, suruh AI menjadi pihak program yang mencari celah untuk menolak temuanmu. Baru setelah lolos, tulis laporannya.</p>
+      <div class="block prompt">
+        <div class="block-label">Kirim ke Claude — langkah A</div>
+        <pre><code>Sekarang jadi triager program. Cari semua alasan untuk MENOLAK
+tiap temuan confirmed: scope, duplikat, bukti kurang, dampak
+dibesar-besarkan. Tunjukkan yang lolos dan yang gugur.</code></pre>
+      </div>
+      <div class="block prompt">
+        <div class="block-label">Kirim ke Claude — langkah B</div>
+        <pre><code>Tulis report untuk temuan yang lolos, sesuai report-schema.
+Satu paragraf per section, sertakan request mentah dan langkah
+reproduksi. Jangan pakai em-dash. Jangan translate istilah teknis.</code></pre>
+      </div>
+      <p>Periksa sendiri hasilnya, lalu submit lewat platform bug bounty-mu. AI tidak submit untukmu, kamu yang pegang kendali akhir.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><div class="sec-num">10</div><h2>Kalau tersendat — perbaikan cepat</h2></div>
+    <div class="sec-body">
+      <div class="tbl-wrap">
+      <table>
+        <tr><th>Gejala</th><th>Sebab & solusi</th></tr>
+        <tr><td>Skill tidak muncul di <code>/skills</code></td><td>Posisi <code>SKILL.md</code> salah atau folder dobel. Cek: <code>find ~/.claude/skills/security-audit -iname SKILL.md</code></td></tr>
+        <tr><td>Muncul tapi tidak pernah kepakai</td><td>Sebut eksplisit di prompt: "pakai skill security-audit".</td></tr>
+        <tr><td><code>validate-findings.cjs</code> error</td><td>Node.js belum ada. Cek <code>node -v</code>, pasang kalau kosong.</td></tr>
+        <tr><td>AI menyentuh aset out-of-scope</td><td>Hentikan segera. Pertajam daftar in/out-scope di engagement-rules.</td></tr>
+        <tr><td>Semua kandidat jadi "confirmed"</td><td>Gerbang tidak jalan. Minta validasi ulang pakai skrip + schema secara eksplisit.</td></tr>
+      </table>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p><b>Pengingat etik.</b> Seluruh panduan ini hanya untuk target dengan izin tertulis: program bug bounty resmi atau pentest berkontrak. Menguji sistem tanpa izin adalah ilegal. Aturan scope bukan formalitas, dan kamu bertanggung jawab penuh atas setiap tindakan yang dijalankan AI atas perintahmu.</p>
+  </footer>
+</div>
+
+</body></html>
